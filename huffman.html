@@ -203,15 +203,21 @@
         function buildHuffmanTree(freqMap) {
             const nodes = Object.entries(freqMap).map(([char, freq]) => new HuffmanNode(char, freq));
             
+            //Iteratively merge until single tree remains
             while (nodes.length > 1) {
+                // Sort by frequency (ascending) - O(n log n) per iteration
                 nodes.sort((a, b) => a.freq - b.freq);
-                const left = nodes.shift();
-                const right = nodes.shift();
-                const parent = new HuffmanNode(null, left.freq + right.freq, left, right);
-                nodes.push(parent);
+                // Extract two lowest frequency nodes
+                const left = nodes.shift();// O(n) operation
+                const right = nodes.shift();// O(n) operation
+
+                const parent = new HuffmanNode(null // Internal nodes have no character
+                , left.freq + right.freq, left, right);
+
+                nodes.push(parent);// O(1) operation
             }
             
-            return nodes[0];
+            return nodes[0];// Return root of completed tree
         }
 
         // Generate codes
@@ -219,7 +225,7 @@
             if (!root) return codes;
             
             if (root.char !== null) {
-                codes[root.char] = code || '0';
+                codes[root.char] = code || '0';  // The key fix: default to '0' if code is empty
                 return codes;
             }
             
@@ -236,6 +242,7 @@
 
         // Decode text
         function decodeText(encoded, codes) {
+            // Step 1: Build reverse mapping (code → character)
             const reverseMap = {};
             for (let [char, code] of Object.entries(codes)) {
                 reverseMap[code] = char;
@@ -244,11 +251,12 @@
             let result = '';
             let current = '';
             
+            // Step 2: Scan binary string bit by bit
             for (let bit of encoded) {
-                current += bit;
-                if (reverseMap[current]) {
-                    result += reverseMap[current];
-                    current = '';
+                current += bit; // Accumulate bits
+                if (reverseMap[current]) { // Check if accumulated bits form a valid code
+                    result += reverseMap[current];// Found a character
+                    current = ''; // Reset accumulator
                 }
             }
             
@@ -273,8 +281,8 @@
             const codes = generateCodes(tree);
             const encoded = encodeText(inputText, codes);
 
-            const originalBits = inputText.length * 8;
-            const encodedBits = encoded.length;
+            const originalBits = inputText.length * 8;// 8 bits per character (UTF-8/ASCII)
+            const encodedBits = encoded.length;// Length of binary string
             const compressionRatio = ((1 - encodedBits / originalBits) * 100).toFixed(2);
 
             currentEncodedData = {
@@ -302,7 +310,7 @@
             sortedCodes.forEach(([char, code]) => {
                 tableHTML += `
                     <tr class="border-b border-gray-100">
-                        <td class="py-2">${displayChar(char)}</td>
+                        <td class="py-2">${displayChar(char)}</td> <!-- Visual representation -->
                         <td class="text-right">${freqMap[char]}</td>
                         <td class="text-right text-indigo-600">${code}</td>
                     </tr>
@@ -426,17 +434,21 @@
 
         // Download encoded
         document.getElementById('downloadEncoded').addEventListener('click', () => {
+            // Create data object
             const data = {
                 codes: currentEncodedData.codes,
                 encoded: currentEncodedData.encoded,
                 originalLength: currentEncodedData.originalText.length
             };
+            // Create blob with JSON data as plain text
             const blob = new Blob([JSON.stringify(data)], { type: 'text/plain' });
+            // Create temporary URL
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = 'huffman_encoded.txt';
             a.click();
+            // Cleanup: revoke URL to free memory
             URL.revokeObjectURL(url);
         });
 
