@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huffman Encoding Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Huffman Encoding Tool</h1>
+            <p class="text-gray-600">Compress and decompress text using Huffman coding algorithm</p>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="flex justify-center mb-6">
+            <div class="bg-white rounded-lg shadow-md p-1 inline-flex">
+                <button id="encodeBtn" class="px-6 py-2 rounded-md font-semibold transition bg-indigo-600 text-white">
+                    Encode
+                </button>
+                <button id="decodeBtn" class="px-6 py-2 rounded-md font-semibold transition text-gray-600 hover:text-gray-800">
+                    Decode
+                </button>
+            </div>
+        </div>
+
+        <!-- Encode Mode -->
+        <div id="encodeMode">
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Input Text</h2>
+                        <label class="cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm">
+                            📤 Upload File
+                            <input type="file" id="uploadEncode" accept=".txt" class="hidden">
+                        </label>
+                    </div>
+                    
+                    <textarea id="inputText" placeholder="Type or paste your text here, or upload a .txt file..." 
+                        class="w-full h-64 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none font-mono text-sm"></textarea>
+                    
+                    <button id="encodeTextBtn" class="w-full mt-4 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        Encode with Huffman
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Huffman Codes</h2>
+                    <div id="codesTable" class="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+                        <div class="text-center">
+                            <p class="text-4xl mb-2">ℹ️</p>
+                            <p>Encode text to see Huffman codes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="statsSection" class="hidden bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Compression Statistics</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Original Size</p>
+                        <p id="origSize" class="text-2xl font-bold text-blue-600">-</p>
+                        <p id="origBits" class="text-xs text-gray-500">- bits</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Encoded Size</p>
+                        <p id="encSize" class="text-2xl font-bold text-green-600">-</p>
+                        <p id="encBytes" class="text-xs text-gray-500">- bytes</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Compression Ratio</p>
+                        <p id="compRatio" class="text-2xl font-bold text-purple-600">-%</p>
+                        <p class="text-xs text-gray-500">space saved</p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Unique Characters</p>
+                        <p id="uniqueChars" class="text-2xl font-bold text-indigo-600">-</p>
+                        <p class="text-xs text-gray-500">in text</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="encodedOutput" class="hidden bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">Encoded Output</h2>
+                    <button id="downloadEncoded" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold">
+                        📥 Download Compressed
+                    </button>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-64 overflow-auto">
+                    <p id="encodedText" class="font-mono text-xs break-all text-gray-700"></p>
+                </div>
+                <p class="mt-2 text-sm text-gray-600">
+                    Binary string representing the encoded text. Download to save the codes and encoded data as a .txt file.
+                </p>
+            </div>
+        </div>
+
+        <!-- Decode Mode -->
+        <div id="decodeMode" class="hidden">
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Upload Encoded File</h2>
+                    </div>
+                    
+                    <label class="cursor-pointer w-full h-64 border-2 border-dashed border-indigo-300 rounded-lg hover:border-indigo-500 transition flex items-center justify-center bg-indigo-50">
+                        <div class="text-center">
+                            <p class="text-4xl mb-4">📤</p>
+                            <p class="text-gray-700 font-semibold mb-2">Upload Encoded Text File</p>
+                            <p class="text-sm text-gray-500">Click to select a .txt file</p>
+                        </div>
+                        <input type="file" id="uploadDecode" accept=".txt" class="hidden">
+                    </label>
+
+                    <div id="decodeSuccess" class="hidden mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <p class="text-green-700 font-semibold">✓ File loaded successfully!</p>
+                        <p class="text-sm text-gray-600 mt-1">Decoded text is shown on the right</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Decoded Text</h2>
+                        <button id="downloadDecoded" class="hidden bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold">
+                            📥 Download Text
+                        </button>
+                    </div>
+                    
+                    <div id="decodedOutput" class="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+                        <div class="text-center">
+                            <p class="text-4xl mb-2">ℹ️</p>
+                            <p>Upload an encoded file to see decoded text</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="decodeStatsSection" class="hidden bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Decompression Statistics</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Decoded Size</p>
+                        <p id="decOrigSize" class="text-2xl font-bold text-blue-600">-</p>
+                        <p id="decOrigBits" class="text-xs text-gray-500">- bits</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Compressed Size</p>
+                        <p id="decEncSize" class="text-2xl font-bold text-green-600">-</p>
+                        <p id="decEncBytes" class="text-xs text-gray-500">- bytes</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Compression Ratio</p>
+                        <p id="decCompRatio" class="text-2xl font-bold text-purple-600">-%</p>
+                        <p class="text-xs text-gray-500">was saved</p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-1">Unique Characters</p>
+                        <p id="decUniqueChars" class="text-2xl font-bold text-indigo-600">-</p>
+                        <p class="text-xs text-gray-500">decoded</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="decodeCodesSection" class="hidden bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Huffman Codes Used</h2>
+                <div id="decodeCodesTable" class="h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Huffman Node class
+        class HuffmanNode {
+            constructor(char, freq, left = null, right = null) {
+                this.char = char;
+                this.freq = freq;
+                this.left = left;
+                this.right = right;
+            }
+        }
+
+        let currentEncodedData = null;
+        let currentDecodedText = '';
+
+        // Build frequency map
+        function buildFrequencyMap(text) {
+            const freq = {};
+            for (let char of text) {
+                freq[char] = (freq[char] || 0) + 1;
+            }
+            return freq;
+        }
+
+        // Build Huffman tree
+        function buildHuffmanTree(freqMap) {
+            const nodes = Object.entries(freqMap).map(([char, freq]) => new HuffmanNode(char, freq));
+            
+            while (nodes.length > 1) {
+                nodes.sort((a, b) => a.freq - b.freq);
+                const left = nodes.shift();
+                const right = nodes.shift();
+                const parent = new HuffmanNode(null, left.freq + right.freq, left, right);
+                nodes.push(parent);
+            }
+            
+            return nodes[0];
+        }
+
+        // Generate codes
+        function generateCodes(root, code = '', codes = {}) {
+            if (!root) return codes;
+            
+            if (root.char !== null) {
+                codes[root.char] = code || '0';
+                return codes;
+            }
+            
+            generateCodes(root.left, code + '0', codes);
+            generateCodes(root.right, code + '1', codes);
+            
+            return codes;
+        }
+
+        // Encode text
+        function encodeText(text, codes) {
+            return text.split('').map(char => codes[char]).join('');
+        }
+
+        // Decode text
+        function decodeText(encoded, codes) {
+            const reverseMap = {};
+            for (let [char, code] of Object.entries(codes)) {
+                reverseMap[code] = char;
+            }
+
+            let result = '';
+            let current = '';
+            
+            for (let bit of encoded) {
+                current += bit;
+                if (reverseMap[current]) {
+                    result += reverseMap[current];
+                    current = '';
+                }
+            }
+            
+            return result;
+        }
+
+        // Display character
+        function displayChar(char) {
+            if (char === ' ') return '(space)';
+            if (char === '\n') return '(newline)';
+            if (char === '\t') return '(tab)';
+            return char;
+        }
+
+        // Handle encoding
+        function handleEncode() {
+            const inputText = document.getElementById('inputText').value;
+            if (!inputText) return;
+
+            const freqMap = buildFrequencyMap(inputText);
+            const tree = buildHuffmanTree(freqMap);
+            const codes = generateCodes(tree);
+            const encoded = encodeText(inputText, codes);
+
+            const originalBits = inputText.length * 8;
+            const encodedBits = encoded.length;
+            const compressionRatio = ((1 - encodedBits / originalBits) * 100).toFixed(2);
+
+            currentEncodedData = {
+                codes: codes,
+                encoded: encoded,
+                freqMap: freqMap,
+                originalText: inputText
+            };
+
+            // Display codes table
+            let tableHTML = `
+                <div class="overflow-y-auto h-full">
+                    <table class="w-full text-sm">
+                        <thead class="sticky top-0 bg-gray-50">
+                            <tr class="border-b">
+                                <th class="text-left pb-2 font-semibold">Character</th>
+                                <th class="text-right pb-2 font-semibold">Frequency</th>
+                                <th class="text-right pb-2 font-semibold">Code</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-mono">
+            `;
+
+            const sortedCodes = Object.entries(codes).sort((a, b) => freqMap[b[0]] - freqMap[a[0]]);
+            sortedCodes.forEach(([char, code]) => {
+                tableHTML += `
+                    <tr class="border-b border-gray-100">
+                        <td class="py-2">${displayChar(char)}</td>
+                        <td class="text-right">${freqMap[char]}</td>
+                        <td class="text-right text-indigo-600">${code}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += '</tbody></table></div>';
+            document.getElementById('codesTable').innerHTML = tableHTML;
+
+            // Display stats
+            document.getElementById('origSize').textContent = inputText.length + ' chars';
+            document.getElementById('origBits').textContent = originalBits + ' bits';
+            document.getElementById('encSize').textContent = encodedBits + ' bits';
+            document.getElementById('encBytes').textContent = (encodedBits / 8).toFixed(2) + ' bytes';
+            document.getElementById('compRatio').textContent = compressionRatio + '%';
+            document.getElementById('uniqueChars').textContent = Object.keys(codes).length;
+
+            document.getElementById('statsSection').classList.remove('hidden');
+            document.getElementById('encodedOutput').classList.remove('hidden');
+            document.getElementById('encodedText').textContent = encoded;
+        }
+
+        // Handle decoding
+        function handleDecode(data) {
+            try {
+                const decoded = decodeText(data.encoded, data.codes);
+                currentDecodedText = decoded;
+
+                const originalBits = decoded.length * 8;
+                const encodedBits = data.encoded.length;
+                const compressionRatio = ((1 - encodedBits / originalBits) * 100).toFixed(2);
+
+                // Display decoded text
+                document.getElementById('decodedOutput').innerHTML = `
+                    <div class="h-full overflow-y-auto p-4 bg-gray-50">
+                        <p class="font-mono text-sm whitespace-pre-wrap">${decoded}</p>
+                    </div>
+                `;
+
+                // Display stats
+                document.getElementById('decOrigSize').textContent = decoded.length + ' chars';
+                document.getElementById('decOrigBits').textContent = originalBits + ' bits';
+                document.getElementById('decEncSize').textContent = encodedBits + ' bits';
+                document.getElementById('decEncBytes').textContent = (encodedBits / 8).toFixed(2) + ' bytes';
+                document.getElementById('decCompRatio').textContent = compressionRatio + '%';
+                document.getElementById('decUniqueChars').textContent = Object.keys(data.codes).length;
+
+                // Display codes table
+                let tableHTML = '<table class="w-full text-sm"><thead class="sticky top-0 bg-gray-50"><tr class="border-b"><th class="text-left pb-2 font-semibold">Character</th><th class="text-right pb-2 font-semibold">Code</th></tr></thead><tbody class="font-mono">';
+                
+                Object.entries(data.codes).forEach(([char, code]) => {
+                    tableHTML += `<tr class="border-b border-gray-100"><td class="py-2">${displayChar(char)}</td><td class="text-right text-indigo-600">${code}</td></tr>`;
+                });
+
+                tableHTML += '</tbody></table>';
+                document.getElementById('decodeCodesTable').innerHTML = tableHTML;
+
+                document.getElementById('decodeSuccess').classList.remove('hidden');
+                document.getElementById('downloadDecoded').classList.remove('hidden');
+                document.getElementById('decodeStatsSection').classList.remove('hidden');
+                document.getElementById('decodeCodesSection').classList.remove('hidden');
+            } catch (error) {
+                alert('Error decoding: Invalid encoded data');
+            }
+        }
+
+        // Mode switching
+        document.getElementById('encodeBtn').addEventListener('click', () => {
+            document.getElementById('encodeBtn').classList.add('bg-indigo-600', 'text-white');
+            document.getElementById('encodeBtn').classList.remove('text-gray-600');
+            document.getElementById('decodeBtn').classList.remove('bg-indigo-600', 'text-white');
+            document.getElementById('decodeBtn').classList.add('text-gray-600');
+            document.getElementById('encodeMode').classList.remove('hidden');
+            document.getElementById('decodeMode').classList.add('hidden');
+        });
+
+        document.getElementById('decodeBtn').addEventListener('click', () => {
+            document.getElementById('decodeBtn').classList.add('bg-indigo-600', 'text-white');
+            document.getElementById('decodeBtn').classList.remove('text-gray-600');
+            document.getElementById('encodeBtn').classList.remove('bg-indigo-600', 'text-white');
+            document.getElementById('encodeBtn').classList.add('text-gray-600');
+            document.getElementById('decodeMode').classList.remove('hidden');
+            document.getElementById('encodeMode').classList.add('hidden');
+        });
+
+        // Encode button
+        document.getElementById('encodeTextBtn').addEventListener('click', handleEncode);
+
+        // File upload for encoding
+        document.getElementById('uploadEncode').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('inputText').value = event.target.result;
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // File upload for decoding
+        document.getElementById('uploadDecode').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (data.codes && data.encoded) {
+                            handleDecode(data);
+                        } else {
+                            alert('Invalid encoded file format');
+                        }
+                    } catch (error) {
+                        alert('Error reading file: Invalid format');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Download encoded
+        document.getElementById('downloadEncoded').addEventListener('click', () => {
+            const data = {
+                codes: currentEncodedData.codes,
+                encoded: currentEncodedData.encoded,
+                originalLength: currentEncodedData.originalText.length
+            };
+            const blob = new Blob([JSON.stringify(data)], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'huffman_encoded.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Download decoded
+        document.getElementById('downloadDecoded').addEventListener('click', () => {
+            const blob = new Blob([currentDecodedText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'decoded_text.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
